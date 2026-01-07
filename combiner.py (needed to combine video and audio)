@@ -1,0 +1,76 @@
+import os
+import tkinter as tk
+from tkinter import filedialog
+# Updated imports for MoviePy v2.0+
+from moviepy import VideoFileClip, AudioFileClip, CompositeAudioClip
+
+def select_file(title, filetypes):
+    """Opens a file dialog to select a file."""
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    file_path = filedialog.askopenfilename(title=title, filetypes=filetypes)
+    return file_path
+
+def save_file(title, filetypes):
+    """Opens a file dialog to save a file."""
+    root = tk.Tk()
+    root.withdraw()
+    file_path = filedialog.asksaveasfilename(title=title, filetypes=filetypes, defaultextension=".mp4")
+    return file_path
+
+def combine_audio_video():
+    print("Please select your VIDEO file...")
+    video_path = select_file("Select Video File", [("Video files", "*.mp4 *.mov *.avi *.mkv")])
+    if not video_path:
+        print("No video selected. Exiting.")
+        return
+
+    print("Please select your AUDIO file...")
+    audio_path = select_file("Select Audio File", [("Audio files", "*.mp3 *.wav *.aac *.m4a")])
+    if not audio_path:
+        print("No audio selected. Exiting.")
+        return
+
+    print("Please choose where to SAVE the output...")
+    output_path = save_file("Save Output Video", [("MP4 files", "*.mp4")])
+    if not output_path:
+        print("No save location selected. Exiting.")
+        return
+
+    try:
+        # Load clips
+        print(f"Loading video: {os.path.basename(video_path)}")
+        video_clip = VideoFileClip(video_path)
+        
+        print(f"Loading audio: {os.path.basename(audio_path)}")
+        audio_clip = AudioFileClip(audio_path)
+
+        # Handle Duration: Cut audio if it's longer than video
+        if audio_clip.duration > video_clip.duration:
+            print("Trimming audio to match video length...")
+            audio_clip = audio_clip.subclipped(0, video_clip.duration)
+        
+        # Combine
+        # Note: If you want to keep original video sound mixed in, 
+        # uncomment the next two lines:
+        # if video_clip.audio:
+        #     audio_clip = CompositeAudioClip([video_clip.audio, audio_clip])
+
+        final_clip = video_clip.with_audio(audio_clip)
+
+        # Write output
+        print("Rendering video... (This may take a moment)")
+        final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
+        
+        # Cleanup
+        video_clip.close()
+        audio_clip.close()
+        final_clip.close()
+        print(f"Success! Video saved to: {output_path}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    combine_audio_video()
+    
